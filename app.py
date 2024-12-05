@@ -8,6 +8,7 @@ from urllib.parse import urlparse, quote
 st.set_page_config(page_title="Bookstore Dashboard", page_icon="📚", layout="wide")
 st.title("📚 PostgreSQL Bookstore Database Viewer")
 
+# Fetch DATABASE_URL from environment variables
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL is not set in the environment variables.")
@@ -26,8 +27,7 @@ if DATABASE_URL.count(':') > 2:
 try:
     parsed_url = urlparse(DATABASE_URL)
     DB_HOST = parsed_url.hostname
-    # Encode the password to handle special characters
-    encoded_password = quote(parsed_url.password, safe='')
+
     # Safely parse the port with error handling
     try:
         DB_PORT = int(parsed_url.port) if parsed_url.port else None
@@ -61,11 +61,15 @@ def get_db_connection():
         conn = psycopg2.connect(
             dbname=DB_NAME,
             user=DB_USER,
-            password=encoded_password,  # Use encoded password here
+            password=DB_PASSWORD,
             host=DB_HOST,
             port=DB_PORT,
         )
-        return conn
+        cursor = conn.cursor()
+        cursor.execute("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public';")
+        tables = cursor.fetchall()
+        print("Tables in database:", tables)
+        conn.close()
     except Exception as e:
         print("Database connection failed:", e)
 

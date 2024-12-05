@@ -3,22 +3,31 @@ import psycopg2
 import pandas as pd
 import plotly.express as px
 import os
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote
 
 st.set_page_config(page_title="Bookstore Dashboard", page_icon="📚", layout="wide")
 st.title("📚 PostgreSQL Bookstore Database Viewer")
 
-# Fetch DATABASE_URL from environment variables
-# Get DATABASE_URL from the environment
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL is not set in the environment variables.")
 
-# Parse the DATABASE_URL
+# Preprocess the URL to handle malformed parts
+if DATABASE_URL.count(':') > 2:
+    # Split the malformed URL into components
+    parts = DATABASE_URL.split(':')
+    if len(parts) >= 3:
+        # Assume the last part is the actual port and database details
+        username_host = ':'.join(parts[:-2])
+        port_database = ':'.join(parts[-2:])
+        DATABASE_URL = f"{username_host}:{port_database}"
+
+# Parse the corrected DATABASE_URL
 try:
     parsed_url = urlparse(DATABASE_URL)
     DB_HOST = parsed_url.hostname
-
+    # Encode the password to handle special characters
+    encoded_password = quote(parsed_url.password, safe='')
     # Safely parse the port with error handling
     try:
         DB_PORT = int(parsed_url.port) if parsed_url.port else None
@@ -46,26 +55,17 @@ st.sidebar.text(f"Host: {DB_HOST}")
 st.sidebar.text(f"Database: {DB_NAME}")
 st.sidebar.text(f"User: {DB_USER}")
 
-
-
-
-
-
 # Function to establish database connection
 def get_db_connection():
     try:
         conn = psycopg2.connect(
             dbname=DB_NAME,
             user=DB_USER,
-            password=DB_PASSWORD,
+            password=encoded_password,  # Use encoded password here
             host=DB_HOST,
             port=DB_PORT,
         )
-        cursor = conn.cursor()
-        cursor.execute("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public';")
-        tables = cursor.fetchall()
-        print("Tables in database:", tables)
-        conn.close()
+        return conn
     except Exception as e:
         print("Database connection failed:", e)
 

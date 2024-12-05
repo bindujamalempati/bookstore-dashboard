@@ -26,28 +26,40 @@ if DATABASE_URL.count(':') > 2:
         DATABASE_URL = f"{username_host}:{port_database}"
 
 try:
-    # Manually extract the port if `urlparse` fails
-    parsed_url = urlparse(DATABASE_URL)
-    DB_HOST = parsed_url.hostname
+    # Extract host, port, and database manually if URL parsing fails
+    if DATABASE_URL.startswith("postgres://") or DATABASE_URL.startswith("postgresql://"):
+        # Remove the prefix for easier manipulation
+        url_without_prefix = DATABASE_URL.split("://", 1)[1]
 
-    # Extract port manually if `parsed_url.port` is None or malformed
-    port_split = DATABASE_URL.split(':')[-1].split('/')
-    DB_PORT = int(port_split[0]) if port_split[0].isdigit() else None
+        # Split userinfo, host, and database components
+        userinfo, hostinfo = url_without_prefix.split('@', 1)
+        username, password = userinfo.split(':', 1)
+        host_and_port, database = hostinfo.split('/', 1)
 
-    if DB_PORT is None:
-        raise ValueError(f"Invalid or missing port in DATABASE_URL: {DATABASE_URL}")
+        if ':' in host_and_port:
+            hostname, port = host_and_port.split(':', 1)
+        else:
+            hostname = host_and_port
+            port = "5432"  # Default PostgreSQL port
 
-    DB_NAME = parsed_url.path[1:]   # Remove leading slash
-    DB_USER = parsed_url.username
-    DB_PASSWORD = parsed_url.password
+        DB_USER = username
+        DB_PASSWORD = password
+        DB_HOST = hostname
+        DB_PORT = int(port)
+        DB_NAME = database
+
+    else:
+        raise ValueError(f"Unsupported DATABASE_URL format: {DATABASE_URL}")
 
     print(f"Host: {DB_HOST}")
     print(f"Port: {DB_PORT}")
     print(f"Database: {DB_NAME}")
     print(f"User: {DB_USER}")
+
 except Exception as e:
-    print(f"Error parsing DATABASE_URL: {e}")
-    raise
+    print(f"Error processing DATABASE_URL: {e}")
+    st.sidebar.error("Failed to process DATABASE_URL. Please check its format.")
+    raise ValueError(f"Malformed DATABASE_URL: {DATABASE_URL}")
 
 # Sidebar: Database connection
 st.sidebar.header("Database Connection")

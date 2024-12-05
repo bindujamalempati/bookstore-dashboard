@@ -3,25 +3,14 @@ import psycopg2
 import pandas as pd
 import plotly.express as px
 import os
-# Database connection details
-DB_HOST = "localhost"
-DB_NAME = "bookdata"
-DB_USER = "postgres"
-DB_PASSWORD = "binduja"
-DB_PORT = "5432"
 
 # Fetch DATABASE_URL from environment variables
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_db_connection():
+    """Establish a connection to the PostgreSQL database."""
     try:
-        conn = psycopg2.connect(
-            host=DB_HOST,
-            database=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            port=DB_PORT,
-        )
+        conn = psycopg2.connect(DATABASE_URL, sslmode="require")
         return conn
     except Exception as e:
         st.error(f"Error connecting to the database: {e}")

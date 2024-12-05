@@ -5,6 +5,14 @@ import plotly.express as px
 import os
 from urllib.parse import urlparse
 
+st.set_page_config(page_title="Bookstore Dashboard", page_icon="📚", layout="wide")
+st.title("📚 PostgreSQL Bookstore Database Viewer")
+
+# Sidebar: Database connection
+st.sidebar.header("Database Connection")
+st.sidebar.text(f"Host: {DB_HOST}")
+st.sidebar.text(f"Database: {DB_NAME}")
+st.sidebar.text(f"User: {DB_USER}")
 # Fetch DATABASE_URL from environment variables
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -19,11 +27,7 @@ if DATABASE_URL:
 else:
     st.error("DATABASE_URL is not set in environment variables.")
 
-# Sidebar: Display database connection info
-st.sidebar.header("Database Connection")
-st.sidebar.text(f"Host: {DB_HOST}")
-st.sidebar.text(f"Database: {DB_NAME}")
-st.sidebar.text(f"User: {DB_USER}")
+
 
 # Function to establish database connection
 def get_db_connection():
@@ -145,14 +149,7 @@ def fetch_books_by_price_and_category(conn, category_name, max_price):
         return None
 
 # Streamlit App
-st.set_page_config(page_title="Bookstore Dashboard", page_icon="📚", layout="wide")
-st.title("📚 PostgreSQL Bookstore Database Viewer")
 
-# Sidebar: Database connection
-st.sidebar.header("Database Connection")
-st.sidebar.text(f"Host: {DB_HOST}")
-st.sidebar.text(f"Database: {DB_NAME}")
-st.sidebar.text(f"User: {DB_USER}")
 
 # Initialize session state for connection
 if "conn" not in st.session_state:

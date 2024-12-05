@@ -2,12 +2,16 @@ import streamlit as st
 import psycopg2
 import pandas as pd
 import plotly.express as px
+import os
 # Database connection details
 DB_HOST = "localhost"
 DB_NAME = "bookdata"
 DB_USER = "postgres"
 DB_PASSWORD = "binduja"
 DB_PORT = "5432"
+
+# Fetch DATABASE_URL from environment variables
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_db_connection():
     try:

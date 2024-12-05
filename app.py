@@ -27,7 +27,7 @@ if DATABASE_URL.count(':') > 2:
 try:
     parsed_url = urlparse(DATABASE_URL)
     DB_HOST = parsed_url.hostname
-
+    
     # Safely parse the port with error handling
     try:
         DB_PORT = int(parsed_url.port) if parsed_url.port else None
@@ -37,7 +37,7 @@ try:
     if DB_PORT is None:
         raise ValueError("Port is missing or invalid in the DATABASE_URL.")
 
-    DB_NAME = parsed_url.path[1:]   # Remove leading slash
+    DB_NAME = parsed_url.path[1:]  # Remove leading slash
     DB_USER = parsed_url.username
     DB_PASSWORD = parsed_url.password
 
@@ -45,6 +45,7 @@ try:
     print(f"Port: {DB_PORT}")
     print(f"Database: {DB_NAME}")
     print(f"User: {DB_USER}")
+
 except Exception as e:
     print(f"Error parsing DATABASE_URL: {e}")
     raise

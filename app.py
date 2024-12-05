@@ -3,14 +3,38 @@ import psycopg2
 import pandas as pd
 import plotly.express as px
 import os
+from urllib.parse import urlparse
 
 # Fetch DATABASE_URL from environment variables
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# Parse the DATABASE_URL
+if DATABASE_URL:
+    result = urlparse(DATABASE_URL)
+    DB_HOST = result.hostname
+    DB_PORT = result.port
+    DB_NAME = result.path[1:]  # Skip the leading "/"
+    DB_USER = result.username
+    DB_PASSWORD = result.password
+else:
+    st.error("DATABASE_URL is not set in environment variables.")
+
+# Sidebar: Display database connection info
+st.sidebar.header("Database Connection")
+st.sidebar.text(f"Host: {DB_HOST}")
+st.sidebar.text(f"Database: {DB_NAME}")
+st.sidebar.text(f"User: {DB_USER}")
+
+# Function to establish database connection
 def get_db_connection():
-    """Establish a connection to the PostgreSQL database."""
     try:
-        conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+        conn = psycopg2.connect(
+            host=DB_HOST,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            port=DB_PORT,
+        )
         return conn
     except Exception as e:
         st.error(f"Error connecting to the database: {e}")

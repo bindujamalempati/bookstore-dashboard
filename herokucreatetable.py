@@ -81,19 +81,27 @@ def insert_data(conn, table_name, columns, data):
             conn.rollback()
 
 # Function to read data from CSV and load it into the database
+# Function to read data from CSV and load it into the database
 def read_and_load_data(conn, file_path):
     authors, categories, publishers = set(), set(), set()
     books, prices = [], []
 
-    print(f"Current working directory: {os.getcwd()}")  # Debugging log
+    print(f"Current working directory: {os.getcwd()}")
 
     if not os.path.exists(file_path):
-        print(f"Error: File {file_path} not found.")
+        print(f"Error: File '{file_path}' not found.")
+        print("Ensure the file is deployed to Heroku and is in the correct directory.")
         return
 
     with open(file_path, mode='r', encoding='utf-8') as file:
         reader = csv.DictReader(file)
         print("CSV Headers:", reader.fieldnames)
+
+        # Validate CSV headers
+        required_headers = ['Authors', 'Category', 'Publisher', 'Title', 'Description', 'Price Starting With ($)', 'Publish Date (Year)']
+        if not all(header in reader.fieldnames for header in required_headers):
+            print(f"Error: CSV file is missing required headers. Expected: {required_headers}")
+            return
 
         for row in reader:
             try:

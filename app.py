@@ -52,8 +52,20 @@ def get_db_connection():
         return None
 
 # Streamlit App
-if "conn" not in st.session_state:
-    st.session_state.conn = None
+if "conn" in st.session_state and st.session_state.conn:
+    conn = st.session_state.conn
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM books LIMIT 10;")
+            rows = cur.fetchall()
+            if rows:
+                st.write("Books data:")
+                for row in rows:
+                    st.write(row)
+            else:
+                st.warning("No data available in the books table.")
+    except Exception as e:
+        st.error(f"Error fetching data: {e}")
 
 if st.sidebar.button("Connect to Database", key="connect_button"):
     # Your connection logic here

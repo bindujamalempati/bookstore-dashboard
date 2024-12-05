@@ -14,30 +14,30 @@ if not DATABASE_URL:
     raise ValueError("DATABASE_URL is not set in the environment variables.")
 
 # Preprocess the URL to handle malformed parts
+# Preprocess the URL to clean malformed segments
 if DATABASE_URL.count(':') > 2:
-    # Split the malformed URL into components
     parts = DATABASE_URL.split(':')
     if len(parts) >= 3:
-        # Assume the last part is the actual port and database details
+        # Reassemble URL assuming last part includes port and database
         username_host = ':'.join(parts[:-2])
         port_database = ':'.join(parts[-2:])
+        if not port_database.startswith('//'):
+            port_database = f"//{port_database}"  # Ensure proper format
         DATABASE_URL = f"{username_host}:{port_database}"
 
-# Parse the corrected DATABASE_URL
 try:
+    # Manually extract the port if `urlparse` fails
     parsed_url = urlparse(DATABASE_URL)
     DB_HOST = parsed_url.hostname
-    
-    # Safely parse the port with error handling
-    try:
-        DB_PORT = int(parsed_url.port) if parsed_url.port else None
-    except ValueError:
-        raise ValueError(f"Invalid port value in DATABASE_URL: {parsed_url.port}")
+
+    # Extract port manually if `parsed_url.port` is None or malformed
+    port_split = DATABASE_URL.split(':')[-1].split('/')
+    DB_PORT = int(port_split[0]) if port_split[0].isdigit() else None
 
     if DB_PORT is None:
-        raise ValueError("Port is missing or invalid in the DATABASE_URL.")
+        raise ValueError(f"Invalid or missing port in DATABASE_URL: {DATABASE_URL}")
 
-    DB_NAME = parsed_url.path[1:]  # Remove leading slash
+    DB_NAME = parsed_url.path[1:]   # Remove leading slash
     DB_USER = parsed_url.username
     DB_PASSWORD = parsed_url.password
 
@@ -45,7 +45,6 @@ try:
     print(f"Port: {DB_PORT}")
     print(f"Database: {DB_NAME}")
     print(f"User: {DB_USER}")
-
 except Exception as e:
     print(f"Error parsing DATABASE_URL: {e}")
     raise

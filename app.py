@@ -9,25 +9,27 @@ st.set_page_config(page_title="Bookstore Dashboard", page_icon="📚", layout="w
 st.title("📚 PostgreSQL Bookstore Database Viewer")
 
 # Fetch DATABASE_URL from environment variables
+# Get DATABASE_URL from the environment
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable not set or invalid!")
+    raise ValueError("DATABASE_URL is not set in the environment variables.")
 
-# Parse the DATABASE_URL safely
-parsed_url = urlparse(DATABASE_URL)
+# Parse the DATABASE_URL
+try:
+    parsed_url = urlparse(DATABASE_URL)
+    DB_HOST = parsed_url.hostname
+    DB_PORT = int(parsed_url.port)  # Ensure the port is parsed correctly
+    DB_NAME = parsed_url.path[1:]   # Remove leading slash
+    DB_USER = parsed_url.username
+    DB_PASSWORD = parsed_url.password
 
-# Extract database connection components
-DB_HOST = parsed_url.hostname
-DB_PORT = int(parsed_url.port)
-DB_NAME = parsed_url.path[1:]
-DB_USER = parsed_url.username
-DB_PASSWORD = parsed_url.password
-
-# Debugging: Print the parsed components (optional, remove in production)
-print(f"Host: {DB_HOST}")
-print(f"Port: {DB_PORT}")
-print(f"Database: {DB_NAME}")
-print(f"User: {DB_USER}")
+    print(f"Host: {DB_HOST}")
+    print(f"Port: {DB_PORT}")
+    print(f"Database: {DB_NAME}")
+    print(f"User: {DB_USER}")
+except Exception as e:
+    print(f"Error parsing DATABASE_URL: {e}")
+    raise
 
 # Sidebar: Database connection
 st.sidebar.header("Database Connection")

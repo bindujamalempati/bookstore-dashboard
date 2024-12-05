@@ -48,33 +48,20 @@ def get_db_connection():
         )
         return conn
     except Exception as e:
-        st.sidebar.error("Failed to connect to the database.")
+        st.sidebar.error(f"Failed to connect to the database.{e}")
         return None
 
 # Streamlit App
-if "conn" in st.session_state and st.session_state.conn:
-    conn = st.session_state.conn
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM books LIMIT 10;")
-            rows = cur.fetchall()
-            if rows:
-                st.write("Books data:")
-                for row in rows:
-                    st.write(row)
-            else:
-                st.warning("No data available in the books table.")
-    except Exception as e:
-        st.error(f"Error fetching data: {e}")
+# Initialize session state for connection
+if "conn" not in st.session_state:
+    st.session_state.conn = None
 
-if st.sidebar.button("Connect to Database", key="connect_button"):
-    # Your connection logic here
-    if st.session_state.get("conn") is None:
-        st.session_state["conn"] = get_db_connection()
-    if st.session_state["conn"]:
-        st.sidebar.success("Connected to the database!")
+if st.sidebar.button("Connect to Database"):
+    st.session_state.conn = get_db_connection()
+    if st.session_state.conn:
+        st.sidebar.success("Connected to the database successfully!")
     else:
-        st.sidebar.error("Connection failed.")
+        st.sidebar.error("Failed to connect to the database.")
 
 def fetch_books_by_category(conn, category_name):
     query = """
@@ -140,11 +127,11 @@ def fetch_summary_statistics(conn):
 
 def fetch_most_recent_book_by_category(conn, category_name):
     query = """
-    SELECT b.title AS book_title, b.publication_year
+    SELECT b.title AS book_title, b.publish_year
     FROM books b
     JOIN categories c ON b.category_id = c.category_id
     WHERE c.category_name ILIKE %s
-    ORDER BY b.publication_year DESC
+    ORDER BY b.publish_year DESC
     LIMIT 1;
     """
     try:
@@ -164,7 +151,7 @@ def fetch_most_recent_book_by_category(conn, category_name):
 
 def fetch_books_by_price_and_category(conn, category_name, max_price):
     query = """
-    SELECT b.title AS book_title, pr.price, c.category_name, b.publication_year
+    SELECT b.title AS book_title, pr.price, c.category_name, b.publish_year
     FROM books b
     JOIN categories c ON b.category_id = c.category_id
     JOIN prices pr ON b.book_id = pr.book_id
@@ -188,20 +175,13 @@ if "conn" not in st.session_state:
     st.session_state.conn = None
 
 # Function to establish database connection
-def connect_to_database():
-    try:
-        st.session_state.conn = get_db_connection()
-        if st.session_state.conn:
-            st.sidebar.success("Connected to the database successfully!")
-        else:
-            st.sidebar.error("Failed to connect to the database.")
-    except Exception as e:
-        st.sidebar.error(f"Connection error: {e}")
-        print(f"Connection error: {e}")
-
-# Add a button for connecting to the database
 if st.sidebar.button("Connect to Database"):
-    connect_to_database()
+    st.session_state.conn = get_db_connection()
+    if st.session_state.conn:
+        st.sidebar.success("Connected to the database successfully!")
+    else:
+        st.sidebar.error(f"Failed to connect to the database:{e}")
+
 
 # Tabs for navigation
 if st.session_state.conn:

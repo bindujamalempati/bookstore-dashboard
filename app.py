@@ -26,7 +26,7 @@ try:
     if not all([DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD]):
         raise ValueError("Incomplete database credentials in DATABASE_URL.")
 except Exception as e:
-    st.sidebar.error("Error parsing DATABASE_URL.")
+    st.sidebar.error(f"Error parsing DATABASE_URL:{e}")
     st.stop()
 
 # Sidebar: Display database connection details
@@ -56,12 +56,12 @@ def get_db_connection():
 if "conn" not in st.session_state:
     st.session_state.conn = None
 
-if st.sidebar.button("Connect to Database"):
+if st.sidebar.button("Connect to Database", key="connect_button"):
     st.session_state.conn = get_db_connection()
     if st.session_state.conn:
         st.sidebar.success("Connected to the database successfully!")
     else:
-        st.sidebar.error("Failed to connect to the database.")
+        st.sidebar.error(f"Failed to connect to the database:{e}")
 
 def fetch_books_by_category(conn, category_name):
     query = """
@@ -175,7 +175,7 @@ if "conn" not in st.session_state:
     st.session_state.conn = None
 
 # Function to establish database connection
-if st.sidebar.button("Connect to Database"):
+if st.sidebar.button("Connect to Database", key="connect_button"):
     st.session_state.conn = get_db_connection()
     if st.session_state.conn:
         st.sidebar.success("Connected to the database successfully!")

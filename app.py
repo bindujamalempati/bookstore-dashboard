@@ -25,31 +25,26 @@ if DATABASE_URL.count(':') > 2:
             port_database = f"//{port_database}"  # Ensure proper format
         DATABASE_URL = f"{username_host}:{port_database}"
 
+# Preprocess the DATABASE_URL to fix malformed components
 try:
-    # Extract host, port, and database manually if URL parsing fails
-    if DATABASE_URL.startswith("postgres://") or DATABASE_URL.startswith("postgresql://"):
-        # Remove the prefix for easier manipulation
-        url_without_prefix = DATABASE_URL.split("://", 1)[1]
+    # Remove invalid parts if URL is malformed
+    if "://" in DATABASE_URL:
+        url_parts = DATABASE_URL.split("://", 2)  # Split by the first two instances of `://`
+        if len(url_parts) > 2:
+            # Reconstruct a valid URL
+            valid_prefix = url_parts[0] + "://"  # e.g., `postgres://`
+            remaining_url = "@".join(url_parts[1:]).replace("://", "")  # Join and clean up remaining parts
+            DATABASE_URL = valid_prefix + remaining_url
 
-        # Split userinfo, host, and database components
-        userinfo, hostinfo = url_without_prefix.split('@', 1)
-        username, password = userinfo.split(':', 1)
-        host_and_port, database = hostinfo.split('/', 1)
+    parsed_url = urlparse(DATABASE_URL)
+    DB_HOST = parsed_url.hostname
+    DB_PORT = int(parsed_url.port) if parsed_url.port else 5432  # Default port is 5432
+    DB_NAME = parsed_url.path[1:]  # Remove leading slash
+    DB_USER = parsed_url.username
+    DB_PASSWORD = parsed_url.password
 
-        if ':' in host_and_port:
-            hostname, port = host_and_port.split(':', 1)
-        else:
-            hostname = host_and_port
-            port = "5432"  # Default PostgreSQL port
-
-        DB_USER = username
-        DB_PASSWORD = password
-        DB_HOST = hostname
-        DB_PORT = int(port)
-        DB_NAME = database
-
-    else:
-        raise ValueError(f"Unsupported DATABASE_URL format: {DATABASE_URL}")
+    if not all([DB_HOST, DB_NAME, DB_USER, DB_PASSWORD]):
+        raise ValueError("Missing required database connection parameters.")
 
     print(f"Host: {DB_HOST}")
     print(f"Port: {DB_PORT}")
@@ -60,6 +55,7 @@ except Exception as e:
     print(f"Error processing DATABASE_URL: {e}")
     st.sidebar.error("Failed to process DATABASE_URL. Please check its format.")
     raise ValueError(f"Malformed DATABASE_URL: {DATABASE_URL}")
+
 
 # Sidebar: Database connection
 st.sidebar.header("Database Connection")

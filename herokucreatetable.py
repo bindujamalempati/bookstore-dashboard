@@ -4,31 +4,30 @@ import psycopg2
 from urllib.parse import urlparse
 
 # Fetch DATABASE_URL from environment variables
-DATABASE_URL = os.getenv('DATABASE_URL')
-
+DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    print("Error: DATABASE_URL environment variable not set.")
+    print("Error: DATABASE_URL is not set.")
+    print("Ensure the DATABASE_URL environment variable is set in Heroku.")
     exit()
 
-parsed_url = urlparse(DATABASE_URL)
-
-# Connect to the database
+# Parse DATABASE_URL and establish database connection
 try:
-    # Connect to the database using extracted parameters
+    parsed_url = urlparse(DATABASE_URL)
     conn = psycopg2.connect(
-        dbname=parsed_url.path[1:],  # Remove leading '/' from the path
+        dbname=parsed_url.path[1:],  # Remove leading '/'
         user=parsed_url.username,
         password=parsed_url.password,
         host=parsed_url.hostname,
-        port=parsed_url.port
+        port=parsed_url.port,
+        sslmode='require'
     )
     print("Connected to the database.")
-except psycopg2.OperationalError as e:
+except Exception as e:
     print(f"Error connecting to the database: {e}")
     exit()
 
+# Function to create necessary tables
 def setup_database(conn):
-    """Create the necessary tables."""
     with conn.cursor() as cur:
         cur.execute("""
             CREATE TABLE IF NOT EXISTS authors (
@@ -63,12 +62,12 @@ def setup_database(conn):
         conn.commit()
         print("Tables created successfully.")
 
+# Function to sanitize and trim data
 def sanitize_value(value, max_length=255):
-    """Sanitize and trim the value."""
     return value.strip()[:max_length] if value else None
 
+# Function to insert data into a table
 def insert_data(conn, table_name, columns, data):
-    """Generic function to insert data into a table."""
     with conn.cursor() as cur:
         try:
             placeholders = ", ".join(["%s"] * len(columns))
@@ -81,10 +80,16 @@ def insert_data(conn, table_name, columns, data):
             print(f"Error inserting data into {table_name}: {error}")
             conn.rollback()
 
+# Function to read data from CSV and load it into the database
 def read_and_load_data(conn, file_path):
-    """Read the data from the CSV file and load it into the database."""
     authors, categories, publishers = set(), set(), set()
     books, prices = [], []
+
+    print(f"Current working directory: {os.getcwd()}")  # Debugging log
+
+    if not os.path.exists(file_path):
+        print(f"Error: File {file_path} not found.")
+        return
 
     with open(file_path, mode='r', encoding='utf-8') as file:
         reader = csv.DictReader(file)
@@ -147,16 +152,14 @@ def read_and_load_data(conn, file_path):
         conn.commit()
         print("Prices inserted successfully.")
 
+# Main function
 def main():
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        print("Connected to the database.")
-        setup_database(conn)
-        read_and_load_data(conn, "C:/Users/Malempati Binduja/Desktop/dataset/BooksDatasetClean.csv")
-        conn.close()
-        print("Database connection closed.")
-    except Exception as e:
-        print("Error:", e)
+    setup_database(conn)
+    # Ensure the file path matches where BooksDatasetClean.csv is deployed
+    print("Attempting to load data from BooksDatasetClean.csv...")
+    read_and_load_data(conn, "BooksDatasetClean.csv")
+    conn.close()
+    print("Database setup and data loading complete.")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -3,7 +3,7 @@ import psycopg2
 import pandas as pd
 import plotly.express as px
 import os
-from urllib.parse import urlparse, quote
+from urllib.parse import urlparse
 
 st.set_page_config(page_title="Bookstore Dashboard", page_icon="📚", layout="wide")
 st.title("📚 PostgreSQL Bookstore Database Viewer")
@@ -11,53 +11,25 @@ st.title("📚 PostgreSQL Bookstore Database Viewer")
 # Fetch DATABASE_URL from environment variables
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    raise ValueError("DATABASE_URL is not set in the environment variables.")
+    st.sidebar.error("DATABASE_URL is not set in the environment variables.")
+    st.stop()
 
-# Preprocess the URL to handle malformed parts
-# Preprocess the URL to clean malformed segments
-if DATABASE_URL.count(':') > 2:
-    parts = DATABASE_URL.split(':')
-    if len(parts) >= 3:
-        # Reassemble URL assuming last part includes port and database
-        username_host = ':'.join(parts[:-2])
-        port_database = ':'.join(parts[-2:])
-        if not port_database.startswith('//'):
-            port_database = f"//{port_database}"  # Ensure proper format
-        DATABASE_URL = f"{username_host}:{port_database}"
-
-# Preprocess the DATABASE_URL to fix malformed components
+# Parse DATABASE_URL
 try:
-    # Remove invalid parts if URL is malformed
-    if "://" in DATABASE_URL:
-        url_parts = DATABASE_URL.split("://", 2)  # Split by the first two instances of `://`
-        if len(url_parts) > 2:
-            # Reconstruct a valid URL
-            valid_prefix = url_parts[0] + "://"  # e.g., `postgres://`
-            remaining_url = "@".join(url_parts[1:]).replace("://", "")  # Join and clean up remaining parts
-            DATABASE_URL = valid_prefix + remaining_url
-
     parsed_url = urlparse(DATABASE_URL)
     DB_HOST = parsed_url.hostname
-    DB_PORT = int(parsed_url.port) if parsed_url.port else 5432  # Default port is 5432
-    DB_NAME = parsed_url.path[1:]  # Remove leading slash
+    DB_PORT = int(parsed_url.port) if parsed_url.port else 5432  # Default port
+    DB_NAME = parsed_url.path[1:]  # Remove leading '/'
     DB_USER = parsed_url.username
     DB_PASSWORD = parsed_url.password
 
-    if not all([DB_HOST, DB_NAME, DB_USER, DB_PASSWORD]):
-        raise ValueError("Missing required database connection parameters.")
-
-    print(f"Host: {DB_HOST}")
-    print(f"Port: {DB_PORT}")
-    print(f"Database: {DB_NAME}")
-    print(f"User: {DB_USER}")
-
+    if not all([DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD]):
+        raise ValueError("Incomplete database credentials in DATABASE_URL.")
 except Exception as e:
-    print(f"Error processing DATABASE_URL: {e}")
-    st.sidebar.error("Failed to process DATABASE_URL. Please check its format.")
-    raise ValueError(f"Malformed DATABASE_URL: {DATABASE_URL}")
+    st.sidebar.error("Error parsing DATABASE_URL.")
+    st.stop()
 
-
-# Sidebar: Database connection
+# Sidebar: Display database connection details
 st.sidebar.header("Database Connection")
 st.sidebar.text(f"Host: {DB_HOST}")
 st.sidebar.text(f"Database: {DB_NAME}")
@@ -72,14 +44,23 @@ def get_db_connection():
             password=DB_PASSWORD,
             host=DB_HOST,
             port=DB_PORT,
+            sslmode='require'
         )
-        cursor = conn.cursor()
-        cursor.execute("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public';")
-        tables = cursor.fetchall()
-        print("Tables in database:", tables)
-        conn.close()
+        return conn
     except Exception as e:
-        print("Database connection failed:", e)
+        st.sidebar.error("Failed to connect to the database.")
+        return None
+
+# Streamlit App
+if "conn" not in st.session_state:
+    st.session_state.conn = None
+
+if st.sidebar.button("Connect to Database"):
+    st.session_state.conn = get_db_connection()
+    if st.session_state.conn:
+        st.sidebar.success("Connected to the database!")
+    else:
+        st.sidebar.error("Connection failed.")
 
 def fetch_books_by_category(conn, category_name):
     query = """
@@ -194,12 +175,15 @@ if "conn" not in st.session_state:
 
 # Function to establish database connection
 def connect_to_database():
-    if st.session_state.conn is None:
+    try:
         st.session_state.conn = get_db_connection()
         if st.session_state.conn:
             st.sidebar.success("Connected to the database successfully!")
         else:
             st.sidebar.error("Failed to connect to the database.")
+    except Exception as e:
+        st.sidebar.error(f"Connection error: {e}")
+        print(f"Connection error: {e}")
 
 # Add a button for connecting to the database
 if st.sidebar.button("Connect to Database"):

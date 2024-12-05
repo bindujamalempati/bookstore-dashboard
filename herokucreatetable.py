@@ -1,9 +1,31 @@
 import os
 import csv
 import psycopg2
+from urllib.parse import urlparse
 
-# Fetch DATABASE_URL from environment variables (safer for deployment)
-DATABASE_URL = os.getenv("DATABASE_URL", "postgres://<default-fallback-url>")
+# Fetch DATABASE_URL from environment variables
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+if not DATABASE_URL:
+    print("Error: DATABASE_URL environment variable not set.")
+    exit()
+
+parsed_url = urlparse(DATABASE_URL)
+
+# Connect to the database
+try:
+    # Connect to the database using extracted parameters
+    conn = psycopg2.connect(
+        dbname=parsed_url.path[1:],  # Remove leading '/' from the path
+        user=parsed_url.username,
+        password=parsed_url.password,
+        host=parsed_url.hostname,
+        port=parsed_url.port
+    )
+    print("Connected to the database.")
+except psycopg2.OperationalError as e:
+    print(f"Error connecting to the database: {e}")
+    exit()
 
 def setup_database(conn):
     """Create the necessary tables."""

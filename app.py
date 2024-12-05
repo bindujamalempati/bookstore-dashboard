@@ -18,7 +18,16 @@ if not DATABASE_URL:
 try:
     parsed_url = urlparse(DATABASE_URL)
     DB_HOST = parsed_url.hostname
-    DB_PORT = int(parsed_url.port)  # Ensure the port is parsed correctly
+
+    # Safely parse the port with error handling
+    try:
+        DB_PORT = int(parsed_url.port) if parsed_url.port else None
+    except ValueError:
+        raise ValueError(f"Invalid port value in DATABASE_URL: {parsed_url.port}")
+
+    if DB_PORT is None:
+        raise ValueError("Port is missing or invalid in the DATABASE_URL.")
+
     DB_NAME = parsed_url.path[1:]   # Remove leading slash
     DB_USER = parsed_url.username
     DB_PASSWORD = parsed_url.password

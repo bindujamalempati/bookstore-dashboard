@@ -170,17 +170,7 @@ def fetch_books_by_price_and_category(conn, category_name, max_price):
 # Streamlit App
 
 
-# Initialize session state for connection
-if "conn" not in st.session_state:
-    st.session_state.conn = None
 
-# Function to establish database connection
-if st.sidebar.button("Connect to Database", key="connect_button"):
-    st.session_state.conn = get_db_connection()
-    if st.session_state.conn:
-        st.sidebar.success("Connected to the database successfully!")
-    else:
-        st.sidebar.error(f"Failed to connect to the database:{e}")
 
 
 # Tabs for navigation

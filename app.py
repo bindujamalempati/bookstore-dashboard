@@ -10,7 +10,7 @@ st.title("📚 PostgreSQL Bookstore Database Viewer")
 
 # Fetch DATABASE_URL from environment variables
 DATABASE_URL = os.getenv("DATABASE_URL")
-
+print(DATABASE_URL)
 # Parse the DATABASE_URL
 if DATABASE_URL:
     result = urlparse(DATABASE_URL)

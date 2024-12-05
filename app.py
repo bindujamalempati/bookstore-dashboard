@@ -8,11 +8,6 @@ from urllib.parse import urlparse
 st.set_page_config(page_title="Bookstore Dashboard", page_icon="📚", layout="wide")
 st.title("📚 PostgreSQL Bookstore Database Viewer")
 
-# Sidebar: Database connection
-st.sidebar.header("Database Connection")
-st.sidebar.text(f"Host: {DB_HOST}")
-st.sidebar.text(f"Database: {DB_NAME}")
-st.sidebar.text(f"User: {DB_USER}")
 # Fetch DATABASE_URL from environment variables
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -26,6 +21,16 @@ if DATABASE_URL:
     DB_PASSWORD = result.password
 else:
     st.error("DATABASE_URL is not set in environment variables.")
+    st.stop()
+
+# Sidebar: Database connection
+st.sidebar.header("Database Connection")
+st.sidebar.text(f"Host: {DB_HOST}")
+st.sidebar.text(f"Database: {DB_NAME}")
+st.sidebar.text(f"User: {DB_USER}")
+
+
+
 
 
 
@@ -155,13 +160,18 @@ def fetch_books_by_price_and_category(conn, category_name, max_price):
 if "conn" not in st.session_state:
     st.session_state.conn = None
 
-# Connect to the database
+# Function to establish database connection
+def connect_to_database():
+    if st.session_state.conn is None:
+        st.session_state.conn = get_db_connection()
+        if st.session_state.conn:
+            st.sidebar.success("Connected to the database successfully!")
+        else:
+            st.sidebar.error("Failed to connect to the database.")
+
+# Add a button for connecting to the database
 if st.sidebar.button("Connect to Database"):
-    st.session_state.conn = get_db_connection()
-    if st.session_state.conn:
-        st.sidebar.success("Connected to the database successfully!")
-    else:
-        st.sidebar.error("Failed to connect to the database.")
+    connect_to_database()
 
 # Tabs for navigation
 if st.session_state.conn:

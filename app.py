@@ -55,9 +55,11 @@ def get_db_connection():
 if "conn" not in st.session_state:
     st.session_state.conn = None
 
-if st.sidebar.button("Connect to Database"):
-    st.session_state.conn = get_db_connection()
-    if st.session_state.conn:
+if st.sidebar.button("Connect to Database", key="connect_button"):
+    # Your connection logic here
+    if st.session_state.get("conn") is None:
+        st.session_state["conn"] = get_db_connection()
+    if st.session_state["conn"]:
         st.sidebar.success("Connected to the database!")
     else:
         st.sidebar.error("Connection failed.")

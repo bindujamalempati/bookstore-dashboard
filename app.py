@@ -18,8 +18,8 @@ parsed_url = urlparse(DATABASE_URL)
 
 # Extract database connection components
 DB_HOST = parsed_url.hostname
-DB_PORT = parsed_url.port
-DB_NAME = parsed_url.path.lstrip('/')
+DB_PORT = int(parsed_url.port)
+DB_NAME = parsed_url.path[1:]
 DB_USER = parsed_url.username
 DB_PASSWORD = parsed_url.password
 

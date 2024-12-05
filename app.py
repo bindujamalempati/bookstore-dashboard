@@ -10,18 +10,24 @@ st.title("📚 PostgreSQL Bookstore Database Viewer")
 
 # Fetch DATABASE_URL from environment variables
 DATABASE_URL = os.getenv("DATABASE_URL")
-print(DATABASE_URL)
-# Parse the DATABASE_URL
-if DATABASE_URL:
-    result = urlparse(DATABASE_URL)
-    DB_HOST = result.hostname
-    DB_PORT = result.port
-    DB_NAME = result.path[1:]  # Skip the leading "/"
-    DB_USER = result.username
-    DB_PASSWORD = result.password
-else:
-    st.error("DATABASE_URL is not set in environment variables.")
-    st.stop()
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable not set or invalid!")
+
+# Parse the DATABASE_URL safely
+parsed_url = urlparse(DATABASE_URL)
+
+# Extract database connection components
+DB_HOST = parsed_url.hostname
+DB_PORT = parsed_url.port
+DB_NAME = parsed_url.path.lstrip('/')
+DB_USER = parsed_url.username
+DB_PASSWORD = parsed_url.password
+
+# Debugging: Print the parsed components (optional, remove in production)
+print(f"Host: {DB_HOST}")
+print(f"Port: {DB_PORT}")
+print(f"Database: {DB_NAME}")
+print(f"User: {DB_USER}")
 
 # Sidebar: Database connection
 st.sidebar.header("Database Connection")
@@ -38,16 +44,19 @@ st.sidebar.text(f"User: {DB_USER}")
 def get_db_connection():
     try:
         conn = psycopg2.connect(
-            host=DB_HOST,
-            database=DB_NAME,
+            dbname=DB_NAME,
             user=DB_USER,
             password=DB_PASSWORD,
+            host=DB_HOST,
             port=DB_PORT,
         )
-        return conn
+        cursor = conn.cursor()
+        cursor.execute("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public';")
+        tables = cursor.fetchall()
+        print("Tables in database:", tables)
+        conn.close()
     except Exception as e:
-        st.error(f"Error connecting to the database: {e}")
-        return None
+        print("Database connection failed:", e)
 
 def fetch_books_by_category(conn, category_name):
     query = """
